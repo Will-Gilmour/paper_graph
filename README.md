@@ -1,7 +1,9 @@
 # Paper Graph
 
 GPU-accelerated literature search and citation network visualization.
-Background and Demo: https://youtu.be/ITWbtRxFnNM
+
+**Background and Demo:** [YouTube](https://youtu.be/ITWbtRxFnNM)  
+**Why this project exists:** [Beyond the Blue Links](docs/BEYOND_THE_BLUE_LINKS.md) – an article on citation graphs, AI-assisted research, and the motivation behind this work
 
 ## 🚀 Quick Start
 
