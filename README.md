@@ -1,4 +1,4 @@
-# paper_graph
+# Paper Graph
 
 GPU-accelerated literature search and citation network visualization.
 
