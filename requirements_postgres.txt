@@ -1,0 +1,13 @@
+requests
+httpx
+networkx
+numpy
+matplotlib
+scikit-learn
+fastapi
+uvicorn
+rapidfuzz
+async-lru
+sqlalchemy
+psycopg2-binary
+tqdm

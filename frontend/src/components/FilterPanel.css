@@ -1,0 +1,248 @@
+.filter-panel {
+  background: #ffffff;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin: 16px 0;
+  transition: all 0.3s ease;
+}
+
+.filter-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  cursor: pointer;
+  user-select: none;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.filter-header:hover {
+  background: #f5f5f5;
+}
+
+.filter-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.filter-badge {
+  background: #4CAF50;
+  color: white;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 12px;
+  text-transform: uppercase;
+}
+
+.toggle-btn {
+  background: none;
+  border: none;
+  font-size: 14px;
+  color: #666;
+  cursor: pointer;
+  padding: 4px;
+  transition: transform 0.3s ease;
+}
+
+.filter-panel.expanded .toggle-btn {
+  transform: rotate(0deg);
+}
+
+.filter-panel.collapsed .toggle-btn {
+  transform: rotate(-90deg);
+}
+
+.filter-body {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.filter-label {
+  font-weight: 600;
+  font-size: 14px;
+  color: #333;
+}
+
+.input-label {
+  font-size: 12px;
+  color: #666;
+  font-weight: normal;
+}
+
+.filter-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.filter-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.filter-separator {
+  font-weight: bold;
+  color: #666;
+  padding-top: 20px;
+}
+
+.filter-input {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  transition: border-color 0.2s ease;
+}
+
+.filter-input:focus {
+  outline: none;
+  border-color: #2196F3;
+  box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.1);
+}
+
+.filter-input::placeholder {
+  color: #aaa;
+}
+
+.filter-slider {
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(to right, #2196F3, #4CAF50, #FFC107);
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.filter-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid #2196F3;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s ease;
+}
+
+.filter-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
+}
+
+.filter-slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid #2196F3;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s ease;
+}
+
+.filter-slider::-moz-range-thumb:hover {
+  transform: scale(1.1);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
+}
+
+.slider-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 4px;
+}
+
+.slider-labels span {
+  font-size: 11px;
+  color: #666;
+}
+
+.filter-hint {
+  font-size: 12px;
+  color: #666;
+  font-style: italic;
+}
+
+.active-filters {
+  background: #f0f8ff;
+  border: 1px solid #2196F3;
+  border-radius: 6px;
+  padding: 12px;
+  font-size: 13px;
+}
+
+.active-filters strong {
+  display: block;
+  margin-bottom: 8px;
+  color: #2196F3;
+}
+
+.active-filters ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.active-filters li {
+  margin: 4px 0;
+  color: #333;
+}
+
+.clear-filters-btn {
+  background: #f44336;
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-top: 8px;
+}
+
+.clear-filters-btn:hover:not(:disabled) {
+  background: #d32f2f;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.clear-filters-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .filter-row {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .filter-separator {
+    display: none;
+  }
+
+  .slider-labels span:nth-child(2) {
+    display: none;
+  }
+}
+

@@ -1,0 +1,48 @@
+# ───────────────────────── base image ─────────────────────────
+FROM python:3.10-slim AS runtime
+
+#------------------------------------------------------------------------
+# 0) System libs – libpq is needed at *runtime* for psycopg’s binary wheel
+#    build-essential is *only* for packages that still need compilation.
+#------------------------------------------------------------------------
+RUN apt-get update && \
+    apt-get install --no-install-recommends -y gcc libpq5 && \
+    rm -rf /var/lib/apt/lists/*
+
+#------------------------------------------------------------------------
+# 1) Working dir and cache
+#------------------------------------------------------------------------
+WORKDIR /app
+RUN mkdir -p /app/.cache
+
+#------------------------------------------------------------------------
+# 2) Install Python deps first (leverages layer cache)
+#    requirements_postgres.txt MUST contain:
+#        fastapi
+#        uvicorn[standard]
+#        psycopg[binary,pool]
+#        async-lru
+#        sqlalchemy  (optional, but handy)
+#------------------------------------------------------------------------
+COPY requirements_postgres.txt .
+RUN pip install --no-cache-dir -r requirements_postgres.txt
+
+#------------------------------------------------------------------------
+# 3) Copy application code
+#------------------------------------------------------------------------
+COPY . .
+
+#------------------------------------------------------------------------
+# 4) Set env-vars that the app needs
+#    (override in docker-compose / Azure → App Settings)
+#------------------------------------------------------------------------
+ENV PYTHONUNBUFFERED=1 \
+    DATABASE_URL=postgresql://pg:secret@postgres:5432/litsearch \
+    PGTZ=UTC  \
+    TZ=UTC
+
+#------------------------------------------------------------------------
+# 5) Expose and launch
+#------------------------------------------------------------------------
+EXPOSE 8000
+CMD ["uvicorn", "backend.app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2", "--log-level", "warning", "--no-access-log"]

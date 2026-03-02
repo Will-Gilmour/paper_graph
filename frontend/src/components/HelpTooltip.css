@@ -1,0 +1,49 @@
+.help-tooltip {
+  display: inline-block;
+  position: relative;
+  margin-left: 0.5rem;
+}
+
+.help-icon {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  line-height: 18px;
+  text-align: center;
+  background: #3b82f6;
+  color: white;
+  border-radius: 50%;
+  font-size: 12px;
+  cursor: help;
+  user-select: none;
+}
+
+.help-bubble {
+  position: absolute;
+  left: 25px;
+  top: -10px;
+  background: #1f2937;
+  color: white;
+  padding: 0.75rem;
+  border-radius: 6px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  min-width: 250px;
+  max-width: 350px;
+  font-size: 0.875rem;
+  line-height: 1.4;
+  z-index: 1000;
+  white-space: normal;
+}
+
+.help-bubble::before {
+  content: '';
+  position: absolute;
+  left: -8px;
+  top: 15px;
+  width: 0;
+  height: 0;
+  border-top: 8px solid transparent;
+  border-bottom: 8px solid transparent;
+  border-right: 8px solid #1f2937;
+}
+

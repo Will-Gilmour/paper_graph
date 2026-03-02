@@ -1,0 +1,139 @@
+.graph-switcher {
+  position: relative;
+  display: inline-block;
+}
+
+.switcher-button {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 1.2rem;
+  background: #1f2937;
+  color: white;
+  border: 2px solid #3b82f6;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-width: 200px;
+}
+
+.switcher-button:hover:not(:disabled) {
+  background: #374151;
+  border-color: #60a5fa;
+}
+
+.switcher-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.active-indicator {
+  color: #10b981;
+  font-size: 1.2rem;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.graph-name {
+  flex: 1;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dropdown-arrow {
+  font-size: 0.8rem;
+  color: #9ca3af;
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  left: 0;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  min-width: 350px;
+  max-height: 400px;
+  overflow-y: auto;
+  z-index: 1000;
+}
+
+.dropdown-header {
+  padding: 0.75rem 1rem;
+  background: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+  font-weight: 600;
+  color: #374151;
+  font-size: 0.875rem;
+}
+
+.dropdown-item {
+  padding: 1rem;
+  border-bottom: 1px solid #f3f4f6;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.dropdown-item:last-child {
+  border-bottom: none;
+}
+
+.dropdown-item:hover {
+  background: #f9fafb;
+}
+
+.dropdown-item.active {
+  background: #f0fdf4;
+  border-left: 3px solid #10b981;
+}
+
+.item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.item-name {
+  font-weight: 600;
+  color: #111827;
+  font-size: 0.95rem;
+}
+
+.active-badge {
+  padding: 0.25rem 0.5rem;
+  background: #10b981;
+  color: white;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.item-stats {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 0.25rem;
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
+.item-stats span {
+  padding: 0.2rem 0.5rem;
+  background: #f3f4f6;
+  border-radius: 4px;
+}
+
+.item-date {
+  font-size: 0.8rem;
+  color: #9ca3af;
+}
+

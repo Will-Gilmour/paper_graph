@@ -1,0 +1,144 @@
+# Unified Docker Compose - All Services
+#
+# This setup provides:
+# - Web form interface (frontend)
+# - Backend API
+# - PostgreSQL database
+# - GPU pipeline worker (RAPIDS + UV)
+#
+# Usage:
+#   docker-compose -f docker-compose.unified.yml up -d
+#   docker-compose -f docker-compose.unified.yml logs -f
+#
+# Stop all:
+#   docker-compose -f docker-compose.unified.yml down
+
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15
+    container_name: litsearch-postgres
+    environment:
+      - POSTGRES_USER=pg
+      - POSTGRES_PASSWORD=secret
+      - POSTGRES_DB=litsearch
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./LitSearch-db/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+      - ./backend/app/database/pipeline_schema.sql:/docker-entrypoint-initdb.d/02-pipeline-schema.sql
+    ports:
+      - "5432:5432"
+    networks:
+      - litsearch-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pg -d litsearch"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend API
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: litsearch-backend
+    environment:
+      - DATABASE_URL=postgresql://pg:secret@postgres:5432/litsearch
+    ports:
+      - "8000:8000"
+    volumes:
+      # Mount backend code for hot reload
+      - ./backend:/app/backend
+      - ./pipeline_outputs:/pipeline_outputs
+      - backend_cache:/app/.cache  # Persist NDJSON files
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - litsearch-network
+    restart: unless-stopped
+
+  # Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.app
+    container_name: litsearch-frontend
+    ports:
+      - "5173:3000"  # Map host 5173 to container 3000
+    environment:
+      - VITE_API_URL=http://localhost:8000
+    volumes:
+      # Mount frontend code for hot reload (Vite watches for changes)
+      - ./frontend/src:/app/src
+      - ./frontend/vite.config.js:/app/vite.config.js
+    depends_on:
+      - backend
+    networks:
+      - litsearch-network
+    restart: unless-stopped
+
+  # GPU Pipeline Worker (RAPIDS + UV)
+  pipeline-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.rapids-uv
+    image: litsearch-rapids-uv-worker:latest
+    container_name: litsearch-pipeline-worker
+    env_file:
+      - .env
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=litsearch
+      - DB_USER=pg
+      - DB_PASSWORD=secret
+      - DATABASE_URL=postgresql://pg:secret@postgres:5432/litsearch
+      - CUDA_VISIBLE_DEVICES=0
+      - PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:512
+      # Ensure Python output is unbuffered for real-time logs
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - ./data_pipeline:/workspace/data_pipeline
+      - ./run_pipeline_worker.py:/workspace/run_pipeline_worker.py
+      - ./data:/workspace/data
+      - ./pipeline_outputs:/workspace/pipeline_outputs  # Persist pipeline outputs
+      - huggingface_cache:/root/.cache/huggingface  # Persist model downloads
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - litsearch-network
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    # Healthcheck - verify worker process is running and can connect to DB
+    healthcheck:
+      test: ["CMD-SHELL", "python -c 'import psycopg2; psycopg2.connect(\"postgresql://pg:secret@postgres:5432/litsearch\").close()' || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    # Logging config for better debugging
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+    restart: unless-stopped
+
+volumes:
+  postgres_data:  # PostgreSQL database - persists across restarts
+  backend_cache:  # Backend NDJSON cache - persists across restarts
+  huggingface_cache:  # Shared cache for ML models (Llama, SapBERT, etc.)
+
+networks:
+  litsearch-network:
+    driver: bridge
+

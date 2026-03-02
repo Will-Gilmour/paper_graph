@@ -1,0 +1,61 @@
+# Start from RAPIDS miniforge-cuda base with Python 3.11 and CUDA 12.8
+FROM rapidsai/miniforge-cuda:cuda12.8.0-base-ubuntu22.04-py3.11
+
+WORKDIR /workspace
+
+# Install UV for fast package management
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+
+# Install cuGraph and cuDF via conda (must be conda as they're CUDA packages)
+# Do this first as it's the most critical GPU component
+RUN conda install -y -c rapidsai -c conda-forge -c nvidia \
+    cugraph=24.10 \
+    cudf=24.10 \
+    cupy \
+    && conda clean -afy
+
+# Now use UV to install PyTorch and other Python packages (much faster than conda/pip)
+# Stage 1: PyTorch with CUDA support
+# NOTE: Using cu124 for better compatibility with CUDA 12.8 base image
+# PyTorch cu124 is forward-compatible with CUDA 12.8
+RUN uv pip install --system --no-cache --index-strategy unsafe-best-match \
+    torch \
+    torchvision \
+    torchaudio \
+    --extra-index-url https://download.pytorch.org/whl/cu124
+
+# Stage 2: ML/AI packages
+RUN uv pip install --system --no-cache \
+    transformers \
+    accelerate \
+    bitsandbytes \
+    sentence-transformers
+
+# Stage 3: Other dependencies
+RUN uv pip install --system --no-cache \
+    psycopg2-binary \
+    requests \
+    networkx \
+    scikit-learn \
+    scipy \
+    numpy \
+    pydantic \
+    pydantic-settings \
+    python-louvain
+
+# Copy application code
+COPY data_pipeline/ /workspace/data_pipeline/
+COPY run_pipeline_worker.py /workspace/
+
+# Verify critical imports work (skip GPU-specific checks as GPU not available at build time)
+RUN python -c "import transformers; print('✅ Transformers OK')" && \
+    python -c "import psycopg2; print('✅ Database OK')" && \
+    python -c "import networkx; import sklearn; print('✅ Core packages OK')" && \
+    python -c "import torch; print(f'✅ PyTorch {torch.__version__} (CUDA build: {torch.version.cuda})')" && \
+    echo "✅ cuGraph/cuDF will be validated at runtime with GPU"
+
+ENV PYTHONUNBUFFERED=1
+ENV CUDA_VISIBLE_DEVICES=0
+
+CMD ["python", "/workspace/run_pipeline_worker.py"]
+
