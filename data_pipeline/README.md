@@ -1,41 +1,47 @@
 # paper_graph Data Pipeline
 
-A modular, maintainable pipeline for building citation graphs, computing layouts, clustering, labeling with LLMs, and exporting to PostgreSQL.
+A modular pipeline for building citation graphs, computing layouts, clustering, labeling with LLMs, and exporting to PostgreSQL.
 
-## 🎯 Overview
-
-This refactored pipeline replaces the legacy monolithic code with clean, modular components organized by function.
+## Overview
 
 ### The 5 Core Functions
 
-1. **Paper Collection** (`api/`, `graph/`) - Crawl citation networks from Crossref/OpenAlex
-2. **GPU Physics Layout** (`layout/`) - Compute 2D positions with ForceAtlas2
-3. **Clustering** (`clustering/`) - Group papers with Louvain algorithm
-4. **LLM Labeling** (`labeling/`, `embeddings/`) - Generate cluster labels with Llama 3.1
-5. **PostgreSQL Export** (`export/`) - Load data into production database
+1. **Paper Collection** (`api/`, `graph/`) – Crawl citation networks from Crossref/OpenAlex
+2. **GPU Physics Layout** (`layout/`) – Compute 2D positions with ForceAtlas2 (cuGraph GPU or CPU fallback)
+3. **Clustering** (`clustering/`) – Group papers with Louvain; hierarchical sub-clustering
+4. **LLM Labeling** (`labeling/`, `embeddings/`) – Generate cluster labels with Llama 3.1
+5. **PostgreSQL Export** (`export/`) – Load data into the database
 
-## 📦 Installation
+### How the Pipeline Runs
+
+- **Primary**: Via the web UI at `/admin/build` – create a build, and the backend runs it (either via `run_pipeline_worker.py` in Docker or `LocalPipelineExecutor` when using the unified stack).
+- **Standalone CLI**: For manual runs outside the web app – e.g. custom seeds, debugging, or batch jobs.
+
+## Installation
+
+From project root:
 
 ```bash
-cd paper_graph   # or project root
 pip install -r data_pipeline/requirements.txt
 ```
 
-For GPU support (optional but recommended):
-```bash
-pip install cudf-cu11 cugraph-cu11 cupy-cuda11x
-```
+For **GPU layout** (RAPIDS/cuGraph), the Docker pipeline worker image includes the stack. For local GPU runs, install the matching CUDA toolkit and RAPIDS packages for your environment.
 
-## 🚀 Quick Start
+## Quick Start (Standalone CLI)
 
-### Full Pipeline (Single Command)
+### Full Pipeline
 
 ```bash
+# Seeds as JSON array or {"seeds": [...]}
+echo '["10.1000/example.doi.1", "10.1000/example.doi.2"]' > seeds.json
+
 python -m data_pipeline run-all \
     --seeds seeds.json \
-    --db-url postgresql://user:pass@localhost/litsearch \
+    --db-url postgresql://pg:secret@localhost:5432/litsearch \
     --gpu
 ```
+
+Required: `--db-url` (or `DATABASE_URL`). For LLM labeling, set `HF_TOKEN` (HuggingFace token for gated models like Llama).
 
 ### Step-by-Step
 
@@ -49,123 +55,70 @@ python -m data_pipeline layout graph.pkl.gz --gpu
 # 3. Cluster
 python -m data_pipeline cluster graph.pkl.gz
 
-# 4. Label with LLM
+# 4. Label with LLM (requires HF_TOKEN)
 python -m data_pipeline label graph.pkl.gz --batch-size 8
 
 # 5. Export to PostgreSQL
 python -m data_pipeline export graph.pkl.gz --db-url $DATABASE_URL
 ```
 
-## 📁 Module Structure
+## Module Structure
 
 ```
 data_pipeline/
-├── api/                # External API clients
-│   ├── crossref.py    # Crossref API
-│   └── openalex.py    # OpenAlex API
-├── graph/              # Graph construction
-│   ├── builder.py     # High-level builder
-│   └── crawler.py     # BFS citation crawler
-├── layout/             # Graph layout
-│   ├── gpu_fa2.py     # GPU ForceAtlas2
-│   └── cpu_fa2.py     # CPU fallback
-├── clustering/         # Community detection
-│   ├── louvain.py     # Louvain clustering
-│   └── hierarchical.py # Sub-clustering
-├── embeddings/         # Document embeddings
-│   ├── sapbert.py     # SapBERT encoder
-│   └── core_selection.py # K-core selection
-├── labeling/           # LLM labeling
-│   ├── llm_client.py  # LLM interface
-│   └── cluster_labeler.py # Label coordinator
-├── export/             # Data export
-│   ├── postgres_export.py # PostgreSQL
-│   └── pickle_export.py   # Pickle format
-├── workflow/           # Orchestration
-│   └── orchestrator.py # Main coordinator
-├── cli/                # Command-line interface
-│   └── main.py        # CLI commands
-├── config/             # Configuration
-│   └── settings.py    # Pydantic config
-├── models/             # Data models
-│   ├── paper.py       # Paper dataclass
-│   ├── graph.py       # Graph container
-│   └── cluster.py     # Cluster models
-└── utils/              # Utilities
-    ├── logging.py     # Logging setup
-    ├── progress.py    # Progress bars
-    └── errors.py      # Exception classes
+├── api/                # Crossref, OpenAlex clients
+├── graph/              # Citation crawler, graph builder
+├── layout/             # GPU ForceAtlas2, CPU fallback
+├── clustering/         # Louvain, hierarchical sub-clustering
+├── embeddings/         # SapBERT encoder, k-core selection
+├── labeling/           # LLM client, cluster labeler
+├── export/             # PostgreSQL, pickle
+├── workflow/           # Orchestrator
+├── cli/                # CLI commands
+├── config/             # Pydantic settings
+├── models/             # Paper, graph, cluster models
+└── utils/              # Logging, progress, errors
 ```
 
-## 🔧 Configuration
-
-Configuration via Pydantic models or environment variables:
+## Configuration
 
 ```python
 from data_pipeline.config import PipelineConfig
 
 config = PipelineConfig(
     seed_dois=["10.1001/jama.2020.12345"],
-    max_depth=1,
-    output_dir="./output",
+    max_depth=2,
+    output_dir=Path("./output"),
     verbose=True,
 )
-
-# Customize components
 config.layout.use_gpu = True
-config.layout.fa2_iterations = 2000
+config.layout.fa2_iterations = 20000
 config.clustering.louvain_resolution = 1.0
 config.labeling.batch_size = 8
 ```
 
 Or via environment variables:
-```bash
-export PIPELINE_MAX_DEPTH=2
-export PIPELINE_VERBOSE=true
-export DATABASE_URL=postgresql://...
-```
 
-## 📊 What Changed from Legacy Code
+- `DATABASE_URL` – PostgreSQL URL
+- `HF_TOKEN` – HuggingFace token (for Llama)
+- `PIPELINE_API_MAILTO` – Email for Crossref/OpenAlex requests
 
-| Aspect | Before (Legacy) | After (Refactored) |
-|--------|----------------|-------------------|
-| **Code Organization** | 1 file, 1,183 lines | 33 files, ~150 lines each |
-| **Responsibilities** | 1 class does everything | Each class has 1 job |
-| **Configuration** | Hard-coded values | Pydantic models + env vars |
-| **Testing** | 0% coverage | Designed for 80%+ |
-| **CLI** | 6 manual scripts | 1 unified command |
-| **Error Handling** | Inconsistent | Proper exception hierarchy |
-| **Documentation** | Scattered | Comprehensive |
-
-## 🧪 Testing (Future)
-
-```bash
-# Unit tests
-pytest tests/unit/
-
-# Integration tests
-pytest tests/integration/
-
-# Full pipeline test
-pytest tests/integration/test_full_pipeline.py
-```
-
-## 📝 Examples
+## Examples
 
 ### Custom Workflow
 
 ```python
+from pathlib import Path
 from data_pipeline.config import PipelineConfig
-from data_pipeline.workflow import PipelineOrchestrator
+from data_pipeline.workflow.orchestrator import PipelineOrchestrator
 
-# Create config
 config = PipelineConfig(
     seed_dois=["10.1001/jama.2020.12345"],
     max_depth=2,
-    output_dir="./my_output",
+    output_dir=Path("./my_output"),
 )
+config.layout.use_gpu = True
 
-# Run pipeline
 orchestrator = PipelineOrchestrator(config)
 orchestrator.run_full_pipeline(config.seed_dois)
 ```
@@ -176,55 +129,52 @@ orchestrator.run_full_pipeline(config.seed_dois)
 from data_pipeline.api import CrossrefClient, OpenAlexClient
 from data_pipeline.graph import CitationCrawler, GraphBuilder
 
-# Build graph manually
 crossref = CrossrefClient(mailto="you@example.com")
-crawler = CitationCrawler(crossref_client=crossref)
+openalex = OpenAlexClient(mailto="you@example.com")
+crawler = CitationCrawler(
+    crossref_client=crossref,
+    openalex_client=openalex,
+    include_citers=True,
+)
 builder = GraphBuilder(crawler)
-
 builder.add_paper("10.1001/jama.2020.12345", max_depth=1)
 graph_data = builder.get_graph_data()
 ```
 
-## 🔗 Backward Compatibility
+## Testing
 
-- Can load existing `.pkl.gz` files
-- Can read existing label JSON files
-- Database schema unchanged
-- Can run alongside legacy code
+From project root:
 
-## 🐛 Troubleshooting
+```bash
+# Unit tests
+pytest data_pipeline/tests/unit/ -v
+
+# Integration tests
+pytest data_pipeline/tests/integration/ -v
+```
+
+## Troubleshooting
 
 ### GPU Out of Memory
-```bash
-# Reduce batch size
-python -m data_pipeline label graph.pkl.gz --batch-size 4
 
-# Or use CPU
+```bash
+python -m data_pipeline label graph.pkl.gz --batch-size 4
 python -m data_pipeline layout graph.pkl.gz --no-gpu
 ```
 
 ### API Rate Limiting
-Configure delays in settings:
+
+Set `PIPELINE_API_MAILTO` and, if needed, increase delay in config:
+
 ```python
-config.api.delay_between_requests = 0.5  # seconds
+config.api.delay_between_requests = 0.5
 ```
 
-## 🤝 Contributing
+### LLM Labeling Fails
 
-When adding new components:
-1. Follow the existing module structure
-2. Keep modules < 500 lines
-3. Add type hints
-4. Write docstrings
-5. Add tests
+- Set `HF_TOKEN` for gated models (Llama).
+- Ensure enough VRAM; try `--batch-size 2` or 4-bit quantization (default).
 
-## 📄 License
+## License
 
 Same as paper_graph project.
-
----
-
-**Version**: 2.0.0  
-**Status**: Production Ready  
-**Replaces**: Legacy `graph_builder6.py`, `cluster_labeler.py`, etc.
-
