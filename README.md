@@ -1,6 +1,7 @@
 # Paper Graph
 
 GPU-accelerated literature search and citation network visualization.
+Background and Demo: https://youtu.be/ITWbtRxFnNM
 
 ## 🚀 Quick Start
 
