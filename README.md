@@ -3,7 +3,8 @@
 GPU-accelerated literature search and citation network visualization.
 
 **Background and Demo:** [YouTube](https://youtu.be/ITWbtRxFnNM)  
-**Why this project exists:** [Beyond the Blue Links](docs/BEYOND_THE_BLUE_LINKS.md) – an article on citation graphs, AI-assisted research, and the motivation behind this work
+**Why this project exists:** [Beyond the Blue Links](docs/BEYOND_THE_BLUE_LINKS.md) – an article on citation graphs, AI-assisted research, and the motivation behind this work  
+**Technical deep-dive:** [Under the Hood](docs/TECHNICAL_OVERVIEW.md) – how the pipeline actually works, from crawling to labelling
 
 ## 🚀 Quick Start
 
